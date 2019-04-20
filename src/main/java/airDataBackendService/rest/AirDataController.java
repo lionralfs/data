@@ -1,5 +1,11 @@
 package airDataBackendService.rest;
 
+
+import airDataBackendService.util.JsonDummyDataProducer;
+import airDataBackendService.values.SensorData.Location;
+import airDataBackendService.values.SensorData.SensorData;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +35,14 @@ public class AirDataController {
                                                               8.95, 9.10, 9.11, 9.05, 9.50,
                                                               9.33, 9.69, 9.88, 10.22, 9.99));
         return ResponseEntity.ok(testList);
+    }
+
+    @GetMapping(value="testDataJson")
+    public ResponseEntity<String> getJsonTestData() throws JsonProcessingException {
+        JsonDummyDataProducer producer = new JsonDummyDataProducer();
+        ObjectMapper mapper = new ObjectMapper();
+        String JsonString = mapper.writeValueAsString(producer.getJsonDummy());
+        return ResponseEntity.ok(JsonString);
     }
 
     @GetMapping(value="getData")

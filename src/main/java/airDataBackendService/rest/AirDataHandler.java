@@ -29,6 +29,15 @@ public class AirDataHandler {
         return restcall;
     }
 
+    public List<SensorData> getDataWithQuery(String queryUrl) {
+        LOGGER.info("starting Restcall with query.");
+        List<SensorData> restcall = restTemplate.getForObject(queryUrl, List.class);
+        LOGGER.info("data successfully received.");
+        return restcall;
+    }
+
+
+
 
 
 

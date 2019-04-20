@@ -6,6 +6,7 @@ import airDataBackendService.values.SensorData.Location;
 import airDataBackendService.values.SensorData.SensorData;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,11 @@ import java.util.List;
 @RequestMapping(path = "airdata")
 public class AirDataController {
 
+    @Autowired
+    ObjectMapper objectMapper;
+
+    @Autowired
+    AirDataHandler airDataHandler;
 
     @Value("${changeable.multiplierTime}")
     private long multiplierTime;
@@ -26,6 +32,11 @@ public class AirDataController {
     @PutMapping(value = "postData")
     public ResponseEntity<String> persistData() {
         return ResponseEntity.ok(multiplierTime+ "postData");
+    }
+
+    @GetMapping(value= "latestData")
+    public ResponseEntity<String> getLatestAirData() throws JsonProcessingException {
+        return ResponseEntity.ok(objectMapper.writeValueAsString(airDataHandler.getLatestData()));
     }
 
     @GetMapping(value = "testData")
@@ -40,8 +51,7 @@ public class AirDataController {
     @GetMapping(value="testDataJson")
     public ResponseEntity<String> getJsonTestData() throws JsonProcessingException {
         JsonDummyDataProducer producer = new JsonDummyDataProducer();
-        ObjectMapper mapper = new ObjectMapper();
-        String JsonString = mapper.writeValueAsString(producer.getJsonDummy());
+        String JsonString = objectMapper.writeValueAsString(producer.getJsonDummy());
         return ResponseEntity.ok(JsonString);
     }
 

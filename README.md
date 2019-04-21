@@ -1,5 +1,11 @@
 # Data import
 
+## Installation / Setup
+
+```sh
+mvn package && java -jar target/AirDataBackendService-0.0.1-SNAPSHOT.jar
+```
+
 ## REST Endpoints
 
 ### GET `/api/measurements/dust{query}`
@@ -9,7 +15,7 @@ Returns all _dust only_ measurements.
 Request headers:
 
 ```
-Content-Type: application/json
+Accept: application/json
 ```
 
 Query parameters:
@@ -73,7 +79,7 @@ Returns all _humidity only_ measurements.
 Request headers:
 
 ```
-Content-Type: application/json
+Accept: application/json
 ```
 
 Query parameters: same as `/api/measurements/dust`.

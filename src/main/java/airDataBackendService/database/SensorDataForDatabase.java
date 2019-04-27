@@ -19,8 +19,8 @@ public class SensorDataForDatabase {
     private float locationAltitude;
     private float locationLatitude;
     private String locationCountry;
-    private float p1;
-    private float p2;
+    private float p10;
+    private float p2_5;
 
     public SensorDataForDatabase() {
 
@@ -54,10 +54,10 @@ public class SensorDataForDatabase {
         for (Sensordatavalue value : sensordatavalue) {
             if (value.getValueType().equals("P1")) {
                 p1Param = Float.parseFloat(value.getValue());
-                p1 = p1Param;
+                p10 = p1Param;
             } else if (value.getValueType().equals("P2")) {
                 p2Param = Float.parseFloat(value.getValue());
-                p2 = p2Param;
+                p2_5 = p2Param;
             }
         }
     }
@@ -143,18 +143,18 @@ public class SensorDataForDatabase {
     }
 
     public float getP1() {
-        return p1;
+        return p10;
     }
 
     public void setP1(float p1) {
-        this.p1 = p1;
+        this.p10 = p1;
     }
 
-    public float getP2() {
-        return p2;
+    public float getP2_5() {
+        return p2_5;
     }
 
-    public void setP2(float p2) {
-        this.p2 = p2;
+    public void setP2_5(float p2_5) {
+        this.p2_5 = p2_5;
     }
 }

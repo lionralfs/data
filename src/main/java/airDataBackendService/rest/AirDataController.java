@@ -35,17 +35,9 @@ public class AirDataController {
         return ResponseEntity.ok(JsonString);
     }
 
-    @GetMapping(value = "persist")
-    public ResponseEntity<String> persistData() throws JsonProcessingException {
-        airDataHandlerService.persistLatestAirData();
-        return ResponseEntity.ok("done");
-    }
-
-
-        @GetMapping(value = "query")
+    @GetMapping(value = "query")
     public ResponseEntity<String> getDataWithQuery(
             @RequestParam(value = "country", required = false) String country,
-            @RequestParam(value = "sensorType", required = false) String sensorType,
             @RequestParam(value = "area", required = false) String area,
             @RequestParam(value = "box", required = false) String box
     ) throws JsonProcessingException {

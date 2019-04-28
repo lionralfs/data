@@ -18,7 +18,7 @@ const dbName = 'airdata';
  * dataset is not uploaded yet.
  */
 const today = new Date();
-const yesterdayFormatted = `${today.getFullYear()}-${zeroPad(today.getMonth() + 1)}-${zeroPad(today.getDate() - 2)}`;
+const yesterdayFormatted = `${today.getFullYear()}-${zeroPad(today.getMonth() + 1)}-${zeroPad(today.getDate() - 1)}`;
 
 /**
  * Setup the downloader

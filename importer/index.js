@@ -1,7 +1,7 @@
 const { MongoClient } = require('mongodb');
 const fetch = require('node-fetch');
 const getCSVFiles = require('./getCSVFiles');
-const { zeroPad } = require('./utils');
+const { zeroPad, chunkArray } = require('./utils');
 const processFile = require('./processFile');
 
 // Connection URL
@@ -53,8 +53,6 @@ fetch(`https://archive.luftdaten.info/${yesterdayFormatted}/`)
      * Given the array of CSV files, attempt to download them,
      * read their content and write it into the database
      */
-    // TODO: remove following line (only here for debugging purposes)
-    files = files.slice(0, 10);
 
     // Connect to the mongodb server
     client.connect((err, client) => {
@@ -68,37 +66,59 @@ fetch(`https://archive.luftdaten.info/${yesterdayFormatted}/`)
           throw new Error(err.message);
         }
 
-        const processes = [];
         let addedMeasurements = 0;
-        files.forEach(file => {
-          processes.push(
-            new Promise(async resolve => {
-              const url = `https://archive.luftdaten.info/${yesterdayFormatted}/${file}`;
-              try {
-                const records = await processFile(url);
+        /**
+         * Send off 50 requests at once, then wait until they're done before starting the next 50
+         */
+        const chunks = chunkArray(files, 50);
+        const chunkProcesses = chunks.map(chunk => {
+          return () => {
+            const processes = [];
 
-                collection
-                  .insertMany(records, { ordered: false })
-                  .then(res => {
-                    addedMeasurements += res.insertedCount;
+            chunk.forEach(file => {
+              processes.push(
+                new Promise(async resolve => {
+                  const url = `https://archive.luftdaten.info/${yesterdayFormatted}/${file}`;
+                  try {
+                    const records = await processFile(url);
+
+                    collection
+                      .insertMany(records, { ordered: false })
+                      .then(res => {
+                        addedMeasurements += res.insertedCount;
+                        resolve();
+                      })
+                      .catch(err => {
+                        console.log(`Got "${err.message}" when trying to write ${url} into database`);
+                        resolve();
+                      });
+                  } catch (err) {
+                    console.error(
+                      `An error occured while processing ${url}:\n${err}\nNotice: this did not stop the processing of the current set of CSV files\n\n`
+                    );
                     resolve();
-                  })
-                  .catch(err => {
-                    console.log(`Got "${err.message}" when trying to write ${url} into database`);
-                    resolve();
-                  });
-              } catch (err) {
-                console.error(`An error occured while processing ${url}:\n${err}\nNotice: this did not stop the processing of the current set of CSV files\n\n`);
-                resolve();
-              }
-            })
-          );
+                  }
+                })
+              );
+            });
+
+            return Promise.all(processes);
+          };
         });
 
-        Promise.all(processes).then(() => {
-          console.log(`--- Added ${addedMeasurements} new measurements to the database ---`);
-          client.close();
-        });
+        const last = chunkProcesses.reduce((prevPromise, nextFn) => {
+          return prevPromise.then(() => {
+            return nextFn();
+          });
+        }, Promise.resolve());
+
+        last
+          .then(() => {
+            console.log(`--- Added ${addedMeasurements} new measurements to the database ---`);
+            console.log(`--- Total time: ${Math.floor((new Date().getTime() - today.getTime()) / 1000)} seconds---`);
+            client.close();
+          })
+          .catch(console.error);
       });
     });
   })

@@ -13,7 +13,7 @@ const dbName = 'airdata';
 
 /**
  * If today is 27.04.2019, the following snippet will turn the current date into a
- * formatted string, representing yesterday: "2019-04-27", because it is the date format
+ * formatted string, representing yesterday: "2019-04-26", because it is the date format
  * used by https://archive.luftdaten.info. We need to use yesterdays date because todays
  * dataset is not uploaded yet.
  */

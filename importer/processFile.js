@@ -21,17 +21,26 @@ module.exports = url => {
             try {
               if (err) return reject(err.message);
 
-              const recordsWithId = records
-                .filter(el => el.P1 !== '' && el.P2 !== '')
-                .map(measurement => ({
+              const recordsWithId = [];
+
+              records.forEach(measurement => {
+                const P1parsed = parseFloat(measurement.P1);
+                const P2parsed = parseFloat(measurement.P2);
+
+                if (Number.isNaN(P1parsed)) return;
+                if (Number.isNaN(P2parsed)) return;
+
+                recordsWithId.push({
                   ...measurement,
-                  P1: parseFloat(measurement.P1),
-                  P2: parseFloat(measurement.P2),
-                  timestamp: new Date(measurement.timestamp),
+                  P10: P1parsed,
+                  P25: P2parsed,
+                  timestamp: new Date(measurement.timestamp + 'Z'),
                   lat: parseFloat(measurement.lat),
                   lon: parseFloat(measurement.lon),
+                  fromDataset: url,
                   _id: `${measurement.sensor_id}-${measurement.sensor_type}-${measurement.timestamp}`
-                }));
+                });
+              });
 
               return resolve(recordsWithId);
             } catch (err) {

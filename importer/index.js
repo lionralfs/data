@@ -66,6 +66,12 @@ fetch(`https://archive.luftdaten.info/${yesterdayFormatted}/`)
           throw new Error(err.message);
         }
 
+        // create an index for the "timestamp" field,
+        // this makes mongodb maintain the ascending order
+        collection.createIndex({ timestamp: 1 }, err => {
+          if (err) throw new Error();
+        });
+
         let addedMeasurements = 0;
         /**
          * Send off 50 requests at once, then wait until they're done before starting the next 50

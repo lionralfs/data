@@ -20,7 +20,13 @@ Accept: application/json
 
 Query parameters:
 
-- maxage: only return measurements up to this timestamp, _default_: -1 day
+- limit: `int`, max amount of measurements returned
+  - _default_: `1000`
+  - capped at `100 000`, which is about 25MB of JSON
+- offset: `int`, ignore the first x values (works well together with limit)
+  - _default_: `0`
+- maxage: only return measurements up to this timestamp
+  - _default_: -1 day
   - Format: `YYYYMMDDThhmmssZ`
   - Example: `/api/measurements/dust?maxage=20190418T133000Z`
 - box: only include sensors in a 'box' with the given coordinates
@@ -36,38 +42,26 @@ Result:
 ```json
 [
   {
-    "id": 3395327500,
-    "timestamp": "2019-04-18 11:27:20",
-    "location": {
-      "id": 11856,
-      "latitude": "51.0440",
-      "longitude": "13.7460",
-      "altitude": "115.3",
-      "country": "DE"
-    },
-    "sensor": {
-      "id": 36,
-      "sensor_type": {
-        "id": 14,
-        "name": "SDS011",
-        "manufacturer": "Nova Fitness"
-      }
-    },
-    "sensordatavalues": [
-      {
-        "id": 7202606783,
-        "value": "0.30",
-        "value_type": "P1"
-      },
-      {
-        "id": 7202606786,
-        "value": "0.30",
-        "value_type": "P2"
-      }
-    ]
+    "id": "23432-SDS011-2019-04-28T23:59:59",
+    "sensorId": "23432",
+    "sensorType": "SDS011",
+    "lat": 45.411,
+    "lon": 10.992,
+    "timestamp": 1556495999000,
+    "p10": 0.57,
+    "p25": 0.28,
+    "fromDataset": "https://archive.luftdaten.info/2019-04-28/2019-04-28_sds011_sensor_23432.csv"
   },
   {
-    ...
+    "id": "24435-SDS011-2019-04-28T23:59:59",
+    "sensorId": "24435",
+    "sensorType": "SDS011",
+    "lat": 52.47,
+    "lon": 13.436,
+    "timestamp": 1556495999000,
+    "p10": 7.05,
+    "p25": 6.35,
+    "fromDataset": "https://archive.luftdaten.info/2019-04-28/2019-04-28_sds011_sensor_24435.csv"
   }
 ]
 ```

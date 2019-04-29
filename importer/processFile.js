@@ -30,6 +30,9 @@ module.exports = url => {
                 if (Number.isNaN(P1parsed)) return;
                 if (Number.isNaN(P2parsed)) return;
 
+                delete measurement.P1 // we renamed it to P10
+                delete measurement.P2 // we renamed it to P25
+
                 recordsWithId.push({
                   ...measurement,
                   P10: P1parsed,

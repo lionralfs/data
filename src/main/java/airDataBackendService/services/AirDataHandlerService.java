@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
 
 @Component
 public class AirDataHandlerService {
@@ -61,7 +60,6 @@ public class AirDataHandlerService {
             pe.printStackTrace();
             return new ArrayList<Measurement>();
         }
-        // DBObject query = QueryBuilder.start().put("timestamp").greaterThanEquals(d).get();
         
         return measurementRepository.customQuery(limit, offset, Box.from(box), maxageDate);
     }

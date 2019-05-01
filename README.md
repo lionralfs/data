@@ -27,8 +27,8 @@ Query parameters:
   - _default_: `0`
 - maxage: only return measurements up to this timestamp
   - _default_: -1 day
-  - Format: `YYYYMMDDThhmmssZ`
-  - Example: `/api/measurements/dust?maxage=20190418T133000Z`
+  - Format: `yyyy-MM-dd'T'HH:mm:ssZ` (make sure to url-encode)
+  - Example: `2019-04-01T00:00:00+0000` --> `/api/measurements/dust?maxage=2019-04-01T00%3A00%3A00%2B0000`
 - box: only include sensors in a 'box' with the given coordinates
   - Format: 4 comma separated values: `lat1,lon1,lat2,lon2`, `lat1/lon1` represent the bottom left point, `lat2/lon2` the top right point
   - Example: `/api/measurements/dust?box=48.7820,9.1920,51.0440,13.7460`

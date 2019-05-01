@@ -2,6 +2,7 @@ package airDataBackendService.database;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort.Direction;
@@ -18,12 +19,12 @@ public class MeasurementRepositoryCustomImpl implements MeasurementRepositoryCus
   MongoTemplate mongoTemplate;
 
   @Override
-  public List<Measurement> customQuery(int limit, int offset, Box box) {
+  public List<Measurement> customQuery(int limit, int offset, Box box, Date maxage) {
     List<AggregationOperation> operations = new ArrayList<AggregationOperation>();
 
-    System.out.println(box);
-
     operations.add(Aggregation.sort(Direction.ASC, "timestamp"));
+    operations.add(Aggregation.match(Criteria.where("timestamp").gte(maxage)));
+
     if (box != null) {
       operations.add(Aggregation.match(new Criteria().andOperator(
             Criteria.where("lat").gte(box.getLat1()),
@@ -32,6 +33,7 @@ public class MeasurementRepositoryCustomImpl implements MeasurementRepositoryCus
             Criteria.where("lon").lte(box.getLon2()))
       ));
     }
+    
     operations.add(Aggregation.skip((long) offset));
     operations.add(Aggregation.limit(limit));
 

@@ -21,7 +21,7 @@ public class AirDataController {
 
     @GetMapping(value = "dust", produces = "application/json")
     public List<Measurement> getDustData(
-            @RequestParam(value = "maxage", defaultValue = "2019-04-28T23:59:00.000Z") String maxage,
+            @RequestParam(value = "maxage", required = false) String maxage,
             @RequestParam(value = "box", required = false) String box,
             @RequestParam(value = "country", defaultValue = "DE") String country,
             @RequestParam(value = "limit", defaultValue = "1000") int limit,

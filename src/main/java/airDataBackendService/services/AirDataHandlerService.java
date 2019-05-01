@@ -14,8 +14,13 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 @Component
 public class AirDataHandlerService {
@@ -26,6 +31,12 @@ public class AirDataHandlerService {
 
     @Value("${changeable.restUrl}")
     private String restUrl;
+
+    private Date yesterday() {
+        final Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DATE, -1);
+        return cal.getTime();
+    }
 
     public List<Measurement> getDustData(String maxage, String box, String country, int limit, int offset) {
         System.out.println("[maxage]: " + maxage);
@@ -41,11 +52,18 @@ public class AirDataHandlerService {
         if (offset < 0) {
             offset = 0;
         }
-        // SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
-        // Date d = dateFormat.parse(maxage);
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+        Date maxageDate = yesterday();
+        try {
+            maxageDate = dateFormat.parse(maxage);
+        } catch(ParseException pe) {
+            pe.printStackTrace();
+            return new ArrayList<Measurement>();
+        }
         // DBObject query = QueryBuilder.start().put("timestamp").greaterThanEquals(d).get();
         
-        return measurementRepository.customQuery(limit, offset, Box.from(box));
+        return measurementRepository.customQuery(limit, offset, Box.from(box), maxageDate);
     }
 
     // public List<SensorData> getLatestData() {

@@ -2,6 +2,7 @@ package airDataBackendService.database;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +34,9 @@ public class MeasurementRepositoryCustomImpl implements MeasurementRepositoryCus
             Criteria.where("lon").lte(box.getLon2()))
       ));
     }
-    
+
+    // operations.add(Aggregation.group("sensorId").avg("p25").as("P25"));
+
     operations.add(Aggregation.skip((long) offset));
     operations.add(Aggregation.limit(limit));
 

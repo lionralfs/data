@@ -55,7 +55,9 @@ public class AirDataHandlerService {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
         Date maxageDate = yesterday();
         try {
-            maxageDate = dateFormat.parse(maxage);
+            if (maxage != null) {
+                maxageDate = dateFormat.parse(maxage);
+            }
         } catch(ParseException pe) {
             pe.printStackTrace();
             return new ArrayList<Measurement>();

@@ -7,3 +7,26 @@ spring:
   h2:
     console:
       enabled: true
+  data:
+    mongodb:
+      # Mongo server host.
+      host: localhost
+      # Mongo server port.
+      port: 27017
+      # Login user of the mongo server.
+      # username:
+      # Login password of the mongo server.
+      # password:
+      # Database name.
+      database: airdata
+      # Mongo database URI. When set, host and port are ignored.
+      # uri:
+      # Authentication database name.
+      # authentication-database:
+      # Fully qualified name of the FieldNamingStrategy to use.
+      # field-naming-strategy:
+      # GridFS database name.
+      # grid-fs-database:
+      repositories:
+        # Enable Mongo repositories.
+        enabled: true

@@ -65,17 +65,3 @@ Result:
   }
 ]
 ```
-
-### GET `/api/measurements/humidity{query}`
-
-Returns all _humidity only_ measurements.
-
-Request headers:
-
-```
-Accept: application/json
-```
-
-Query parameters: same as `/api/measurements/dust`.
-
-Result: same as `/api/measurements/dust`, except it returns only humidity measurements.

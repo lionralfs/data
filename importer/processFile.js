@@ -1,57 +1,68 @@
 const fetch = require('node-fetch');
-const parse = require('csv-parse');
+const { parseCSV } = require('./utils');
 
 /**
- * Download a single CSV file, parse it into a JSON format and add a unique id
+ * Returns a clean measurement object with parsed lat/lon and p10/p25 values.
+ * Returns undefined if the measurement included invalid/bad data
+ * @param {Object} measurement The raw measurement object (might include invalid data)
+ * @param {string} datasetUrl The source of the data where the measurement is included
  */
-module.exports = url => {
-  // console.log(`Fetching ${url}`);
-  return new Promise((resolve, reject) => {
-    fetch(url)
-      .then(res => res.text())
-      .then(csvContent => {
-        parse(
-          csvContent,
-          {
-            delimiter: ';',
-            columns: true,
-            skip_empty_lines: true
-          },
-          (err, records) => {
-            try {
-              if (err) return reject(err.message);
+function modifyMeasurement(measurement, datasetUrl) {
+  const P1parsed = parseFloat(measurement.P1);
+  if (Number.isNaN(P1parsed)) return undefined;
 
-              const recordsWithId = [];
+  const P2parsed = parseFloat(measurement.P2);
+  if (Number.isNaN(P2parsed)) return undefined;
 
-              records.forEach(measurement => {
-                const P1parsed = parseFloat(measurement.P1);
-                const P2parsed = parseFloat(measurement.P2);
+  const latParsed = parseFloat(measurement.lat);
+  if (Number.isNaN(latParsed)) return undefined;
 
-                if (Number.isNaN(P1parsed)) return;
-                if (Number.isNaN(P2parsed)) return;
+  const lonParsed = parseFloat(measurement.lon);
+  if (Number.isNaN(lonParsed)) return undefined;
 
-                delete measurement.P1 // we renamed it to P10
-                delete measurement.P2 // we renamed it to P25
+  const result = Object.create(null);
 
-                recordsWithId.push({
-                  ...measurement,
-                  P10: P1parsed,
-                  P25: P2parsed,
-                  timestamp: new Date(measurement.timestamp + 'Z'),
-                  lat: parseFloat(measurement.lat),
-                  lon: parseFloat(measurement.lon),
-                  fromDataset: url,
-                  _id: `${measurement.sensor_id}-${measurement.sensor_type}-${measurement.timestamp}`
-                });
-              });
+  result.P10 = P1parsed;
+  result.P25 = P2parsed;
+  result.sensor_type = measurement.sensor_type;
+  result.sensor_id = measurement.sensor_id;
+  result.timestamp = new Date(`${measurement.timestamp}Z`);
+  result.lat = latParsed;
+  result.lon = lonParsed;
+  result.fromDataset = datasetUrl;
+  result._id = `${measurement.sensor_id}-${measurement.sensor_type}-${measurement.timestamp}`;
 
-              return resolve(recordsWithId);
-            } catch (err) {
-              reject(err);
-            }
-          }
-        );
-      })
-      .catch(reject);
+  return result;
+}
+
+/**
+ * Downloads a single CSV file, parse it into a JSON format and add a unique id
+ * @param {string} url The URL of the CSV file to be processed
+ * @throws
+ */
+async function processFile(url) {
+  // download the file
+  const response = await fetch(url);
+  // read the response text
+  const rawText = await response.text();
+  // parse it into a JS object
+  const measurements = await parseCSV(rawText, {
+    delimiter: ';',
+    columns: true,
+    skip_empty_lines: true
   });
-};
+
+  const cleanMeasurements = [];
+
+  for (const measurement of measurements) {
+    const modified = modifyMeasurement(measurement, url);
+    if (modified === undefined) {
+      continue;
+    }
+    cleanMeasurements.push(modified);
+  }
+
+  return cleanMeasurements;
+}
+
+module.exports = processFile;

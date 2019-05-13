@@ -2,6 +2,14 @@
 
 ## Installation / Setup
 
+You need [docker-compose](https://docs.docker.com/compose/install/) installed to run the MongoDB database. To start it, run `docker-compose up` in the project root directory. This should start the MongoDB docker container.
+
+To import data into the database, you need [Node.js](https://nodejs.org/en/). First, run `npm install` in the project root. You can run the import script by using `node importer/index.js`. This should feed yesterdays dataset into the database.
+
+To inspect the MongoDB database using a GUI, I recommend [Robo 3T](https://robomongo.org/).
+
+Finally, to compile and run the Java backend, run:
+
 ```sh
 mvn package && java -jar target/AirDataBackendService-0.0.1-SNAPSHOT.jar
 ```
@@ -65,17 +73,3 @@ Result:
   }
 ]
 ```
-
-### GET `/api/measurements/humidity{query}`
-
-Returns all _humidity only_ measurements.
-
-Request headers:
-
-```
-Accept: application/json
-```
-
-Query parameters: same as `/api/measurements/dust`.
-
-Result: same as `/api/measurements/dust`, except it returns only humidity measurements.

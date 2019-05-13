@@ -1,4 +1,4 @@
-const fetch = require('node-fetch');
+const { downloadLatest } = require('./downloader');
 
 const fallBackObject = Object.create(null);
 
@@ -32,10 +32,11 @@ function restructure(measurement) {
  * Returns the measurements of the last 5 minutes
  */
 async function getLatest() {
-  const response = await fetch('https://api.luftdaten.info/static/v1/filter/type=SDS011');
-  const latest = await response.json();
+  const latest = await downloadLatest();
 
   return latest.map(restructure);
 }
 
-module.exports = getLatest;
+module.exports = {
+  getLatest: getLatest
+};

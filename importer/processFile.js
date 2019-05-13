@@ -1,6 +1,3 @@
-const fetch = require('node-fetch');
-const { parseCSV } = require('./utils');
-
 /**
  * Returns a clean measurement object with parsed lat/lon and p10/p25 values.
  * Returns undefined if the measurement included invalid/bad data
@@ -36,33 +33,24 @@ function modifyMeasurement(measurement, datasetUrl) {
 }
 
 /**
- * Downloads a single CSV file, parse it into a JSON format and add a unique id
+ * @param {Array} measurements
  * @param {string} url The URL of the CSV file to be processed
  * @throws
  */
-async function processFile(url) {
-  // download the file
-  const response = await fetch(url);
-  // read the response text
-  const rawText = await response.text();
-  // parse it into a JS object
-  const measurements = await parseCSV(rawText, {
-    delimiter: ';',
-    columns: true,
-    skip_empty_lines: true
-  });
-
-  const cleanMeasurements = [];
+async function processFile(measurements, url) {
+  const result = [];
 
   for (const measurement of measurements) {
     const modified = modifyMeasurement(measurement, url);
     if (modified === undefined) {
       continue;
     }
-    cleanMeasurements.push(modified);
+    result.push(modified);
   }
 
-  return cleanMeasurements;
+  return result;
 }
 
-module.exports = processFile;
+module.exports = {
+  processFile: processFile
+};

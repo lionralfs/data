@@ -113,10 +113,9 @@ fetch(`https://archive.luftdaten.info/${yesterdayFormatted}/`)
           };
         });
 
-        const last = chunkProcesses.reduce((prevPromise, nextFn) => {
-          return prevPromise.then(() => {
-            return nextFn();
-          });
+        const last = chunkProcesses.reduce(async (prevPromise, nextFn) => {
+          await prevPromise;
+          return nextFn();
         }, Promise.resolve());
 
         last

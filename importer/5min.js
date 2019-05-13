@@ -11,7 +11,7 @@ cron.schedule('*/2 * * * *', () => {
     .then(async latest => {
       const [client, collection] = await connectToCollection();
 
-      const records = await cleanMeasurements(latest, `latest-${now}`);
+      const records = await cleanMeasurements(latest, `latest-${now.getTime()}`);
 
       try {
         await collection.insertMany(records, { ordered: false });

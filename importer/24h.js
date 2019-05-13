@@ -1,8 +1,14 @@
+// @ts-check
+
+/**
+ * @type {(url: string | Request, init?: RequestInit) => Promise<Response>}
+ */
+// @ts-ignore
 const fetch = require('node-fetch');
-const { downloadFromArchive } = require('./downloader');
+const { downloadFromArchive, downloadPlain } = require('./downloader');
 const { getCSVFiles } = require('./getCSVFiles');
 const { chunkArray } = require('./utils');
-const { processFile } = require('./processFile');
+const { cleanMeasurements } = require('./cleanMeasurements');
 const { connectToCollection } = require('./database');
 const { zeroPad } = require('./utils');
 const { parseCSV } = require('./utils');
@@ -10,52 +16,40 @@ const { parseCSV } = require('./utils');
 // uh oh, global state
 let addedMeasurements = 0;
 
-function createFileProcessor(dateString, dbCollection) {
-  return function(file) {
-    const url = `https://archive.luftdaten.info/${dateString}/${file}`;
-
-    return new Promise(async resolve => {
-      try {
-        // download the file
-        const response = await fetch(url);
-        // read the response text
-        const rawText = await response.text();
-        // parse it into a JS object
-        const measurements = await parseCSV(rawText, {
-          delimiter: ';',
-          columns: true,
-          skip_empty_lines: true
-        });
-        const cleanMeasurements = await processFile(measurements, url);
-
-        dbCollection
-          .insertMany(cleanMeasurements, { ordered: false })
-          .then(res => {
-            addedMeasurements += res.insertedCount;
-            // console.log(`Written to DB: ${res.insertedCount}`);
-            resolve();
-          })
-          .catch(err => {
-            console.log(`Got "${err.message}" when trying to write ${url} into database`);
-          });
-      } catch (err) {
-        console.error(`An error occured while processing ${url}:\n${err}\nNotice: this did not stop the processing of the current set of CSV files\n\n`);
-      }
-
-      resolve();
-    });
-  };
-}
-
 /**
- * Returns a function, which, when called, returns a promise that
- * resolves as soon as all files in the chunk have been processed
+ * @param {string} fileName
+ * @param {string} dateString
+ * @param {import('mongodb').Collection} dbCollection
  */
-function chunkToFunction(chunk, processFileFn) {
-  return function() {
-    const processes = chunk.map(processFileFn);
-    return Promise.all(processes);
-  };
+function processFile(fileName, dateString, dbCollection) {
+  const url = `https://archive.luftdaten.info/${dateString}/${fileName}`;
+
+  return new Promise(async resolve => {
+    try {
+      const rawText = await downloadPlain(url);
+      const measurements = await parseCSV(rawText, {
+        delimiter: ';',
+        columns: true,
+        skip_empty_lines: true
+      });
+      const records = await cleanMeasurements(measurements, url);
+
+      dbCollection
+        .insertMany(records, { ordered: false })
+        .then(res => {
+          addedMeasurements += res.insertedCount;
+          // console.log(`Written to DB: ${res.insertedCount}`);
+          resolve();
+        })
+        .catch(err => {
+          console.log(`Got "${err.message}" when trying to write ${url} into database`);
+        });
+    } catch (err) {
+      console.error(`An error occured while processing ${url}:\n${err}\nNotice: this did not stop the processing of the current set of CSV files\n\n`);
+    }
+
+    resolve();
+  });
 }
 
 function processSequentially(promises) {
@@ -70,15 +64,23 @@ function processSequentially(promises) {
 async function getEntireDay(dateString) {
   const html = await downloadFromArchive(dateString);
   const csvFiles = getCSVFiles(html);
+  /** @type {Array<Array<string>>} */
   const fileChunks = chunkArray(csvFiles, 50);
 
   // open db connection
   const [client, collection] = await connectToCollection();
-  const processFileFn = createFileProcessor(dateString, collection);
-  const chunkProcesses = fileChunks.map(chunk => chunkToFunction(chunk, processFileFn));
+
+  const batchedFunctions = fileChunks.map(function(chunk) {
+    return function() {
+      const processes = chunk.map(function(fileName) {
+        return processFile(fileName, dateString, collection);
+      });
+      return Promise.all(processes);
+    };
+  });
 
   // Send off 50 requests at once, then wait until they're done before starting the next 50
-  await processSequentially(chunkProcesses);
+  await processSequentially(batchedFunctions);
 
   client.close();
 }

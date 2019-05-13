@@ -8,7 +8,7 @@ const cheerio = require('cheerio');
  * '2019-04-26_sds011_sensor_471.csv',
  * ...
  * ]
- *
+ * @return {Array<string>}
  */
 function getCSVFiles(htmlString) {
   const $ = cheerio.load(htmlString);

@@ -1,3 +1,9 @@
+// @ts-check
+
+/**
+ * @type {(url: string | Request, init?: RequestInit) => Promise<Response>}
+ */
+// @ts-ignore
 const fetch = require('node-fetch');
 
 /**
@@ -8,10 +14,15 @@ async function downloadLatest() {
   return await response.json();
 }
 
+async function downloadPlain(url) {
+  const response = await fetch(url);
+  return await response.text();
+}
+
 /**
  * Downloads the HTML directory listing for the specified date from the archive
  * @param {string} dateString A date in the format of "YYYY-MM-DD"
- * @return {string} HTML as a string
+ * @return {Promise<string>} HTML as a string
  * @throws Throws if page couldn't be downloaded
  */
 async function downloadFromArchive(dateString) {
@@ -26,5 +37,6 @@ async function downloadFromArchive(dateString) {
 
 module.exports = {
   downloadLatest: downloadLatest,
-  downloadFromArchive: downloadFromArchive
+  downloadFromArchive: downloadFromArchive,
+  downloadPlain: downloadPlain
 };

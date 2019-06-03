@@ -1,6 +1,16 @@
 const cheerio = require('cheerio');
 
-module.exports = htmlString => {
+/**
+ * Given the raw HTML page, try to extract the individual csv files as an array, such as:
+ *
+ * [
+ * '2019-04-26_sds011_sensor_467.csv',
+ * '2019-04-26_sds011_sensor_471.csv',
+ * ...
+ * ]
+ * @return {Array<string>}
+ */
+function getCSVFiles(htmlString) {
   const $ = cheerio.load(htmlString);
   return $('tr a')
     .toArray()
@@ -9,4 +19,8 @@ module.exports = htmlString => {
       // only grab sds011 sensors
       return el && /_(sds011_sensor)_.+\.csv$/.test(el);
     });
+}
+
+module.exports = {
+  getCSVFiles: getCSVFiles
 };

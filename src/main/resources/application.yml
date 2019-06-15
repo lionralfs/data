@@ -1,7 +1,7 @@
 changeable:
   multiplierTime: 122
-  restUrl: "http://api.luftdaten.info/static/v1/filter/type=SDS011"
-  restUrlHamburg: "http://api.luftdaten.info/static/v1/filter/type=SDS011&country=DE&area=53.33,10.0,10"
+  restUrl: 'http://api.luftdaten.info/static/v1/filter/type=SDS011'
+  restUrlHamburg: 'http://api.luftdaten.info/static/v1/filter/type=SDS011&country=DE&area=53.33,10.0,10'
 
 spring:
   h2:
@@ -10,7 +10,7 @@ spring:
   data:
     mongodb:
       # Mongo server host.
-      host: localhost
+      host: basecamp-bigdata.informatik.uni-hamburg.de
       # Mongo server port.
       port: 27017
       # Login user of the mongo server.

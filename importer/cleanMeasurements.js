@@ -6,10 +6,10 @@
  */
 function enrichMeasurement(aMeasurement, aDatasetUrl) {
   const P1parsed = parseFloat(aMeasurement.P1);
-  if (Number.isNaN(P1parsed)) return undefined;
+  if (Number.isNaN(P1parsed) || P1parsed < 0) return undefined;
 
   const P2parsed = parseFloat(aMeasurement.P2);
-  if (Number.isNaN(P2parsed)) return undefined;
+  if (Number.isNaN(P2parsed) || P1parsed < 0) return undefined;
 
   const latParsed = parseFloat(aMeasurement.lat);
   if (Number.isNaN(latParsed)) return undefined;

@@ -4,6 +4,7 @@
  * @type {(url: string | Request, init?: RequestInit) => Promise<Response>}
  */
 // @ts-ignore
+const cheerio = require('cheerio');
 const { downloadFromArchive, downloadPlain } = require('./downloader');
 const { getCSVFiles } = require('./getCSVFiles');
 const { chunkArray } = require('./utils');
@@ -11,6 +12,7 @@ const { cleanMeasurements } = require('./cleanMeasurements');
 const { connectToCollection } = require('./database');
 const { zeroPad } = require('./utils');
 const { parseCSV } = require('./utils');
+const fs = require('fs');
 
 // uh oh, global state
 let addedMeasurements = 0;
@@ -99,15 +101,73 @@ async function getEntireDay(dateString) {
  * used by https://archive.luftdaten.info. We need to use yesterdays date because todays
  * dataset is not uploaded yet.
  */
-const today = new Date();
-const yesterday = new Date(new Date().setDate(today.getDate() - 1));
-const yesterdayFormatted = `${yesterday.getFullYear()}-${zeroPad(yesterday.getMonth() + 1)}-${zeroPad(yesterday.getDate())}`;
+function getLatestDate() {
+  const today = new Date();
+  const yesterday = new Date(new Date().setDate(today.getDate() - 1));
+  return `${yesterday.getFullYear()}-${zeroPad(yesterday.getMonth() + 1)}-${zeroPad(yesterday.getDate())}`;
+}
 
-addedMeasurements = 0;
-console.log(`--- Downloading latest measurements from https://archive.luftdaten.info (${yesterdayFormatted}) ---`);
-getEntireDay(yesterdayFormatted)
-  .then(() => {
-    console.log(`--- Added ${addedMeasurements} new measurements to the database ---`);
-    console.log(`--- Total time: ${Math.floor((new Date().getTime() - today.getTime()) / 1000)} seconds---`);
-  })
-  .catch(console.error);
+const singleDay = process.argv.includes('--single-day');
+
+const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+let startDate = process.argv[2];
+if (startDate === undefined || !dateRegex.test(startDate)) {
+  startDate = getLatestDate();
+}
+
+if (singleDay) {
+  addedMeasurements = 0;
+  const before = new Date();
+  console.log(`--- Downloading latest measurements from https://archive.luftdaten.info (${startDate}) ---`);
+  getEntireDay(startDate)
+    .then(() => {
+      console.log(`--- Added ${addedMeasurements} new measurements to the database ---`);
+      console.log(`--- Total time: ${Math.floor((new Date().getTime() - before.getTime()) / 1000)} seconds---`);
+    })
+    .catch(console.error);
+} else {
+  downloadPlain('https://archive.luftdaten.info').then(function(text) {
+    const $ = cheerio.load(text);
+
+    const list = $('td a')
+      .toArray()
+      .map(function(element) {
+        return element.children[0].data.replace('/', '');
+      })
+      .filter(function(text) {
+        return !text.includes('.md');
+      });
+
+    const startDateIndex = list.findIndex(function(date) {
+      return date === startDate;
+    });
+
+    list.splice(startDateIndex + 1);
+    list.reverse();
+
+    const todolist = list.map(function(date) {
+      return async function() {
+        console.log(`--- Downloading measurements from https://archive.luftdaten.info (${date}) ---`);
+        const before = new Date();
+        addedMeasurements = 0;
+        try {
+          await getEntireDay(date);
+          console.log(`--- Added ${addedMeasurements} new measurements to the database ---`);
+          console.log(`--- Total time: ${Math.floor((new Date().getTime() - before.getTime()) / 1000)} seconds---`);
+
+          fs.writeFile('./latest', date, function(err) {
+            if (err) {
+              return console.log(err);
+            }
+          });
+        } catch (err) {
+          console.error(err);
+        }
+      };
+    });
+
+    processSequentially(todolist)
+      .then(console.log)
+      .catch(console.error);
+  });
+}

@@ -1,7 +1,5 @@
 const { downloadLatest } = require('./downloader');
 
-const fallBackObject = Object.create(null);
-
 function isP1(obj) {
   return obj.value_type === 'P1';
 }
@@ -13,12 +11,22 @@ function isP2(obj) {
 /**
  * changes a measurement that comes from the `getLatest()` call
  * to look like it came from the archive
+ * return `false` if the measurement is faulty or not wanted
  */
 function restructure(measurement) {
   const result = Object.create(null);
 
-  result.P1 = (measurement.sensordatavalues.find(isP1) || fallBackObject).value;
-  result.P2 = (measurement.sensordatavalues.find(isP2) || fallBackObject).value;
+  // throw away indoor sensors
+  if (measurement.location.indoor !== 0) return false;
+
+  const p1 = measurement.sensordatavalues.find(isP1);
+  if (!p1) return false;
+
+  const p2 = measurement.sensordatavalues.find(isP2);
+  if (!p2) return false;
+
+  result.P1 = p1.value;
+  result.P2 = p2.value;
   result.timestamp = measurement.timestamp.replace(/ /, 'T');
   result.sensor_id = String(measurement.sensor.id);
   result.sensor_type = measurement.sensor.sensor_type.name;
@@ -34,7 +42,7 @@ function restructure(measurement) {
 async function getLatest() {
   const latest = await downloadLatest();
 
-  return latest.map(restructure);
+  return latest.map(restructure).filter(Boolean);
 }
 
 module.exports = {

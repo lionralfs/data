@@ -35,18 +35,40 @@ function processFile(fileName, dateString, dbCollection) {
       });
       const records = await cleanMeasurements(measurements, url);
 
-      dbCollection
-        .insertMany(records, { ordered: false })
-        .then(res => {
-          addedMeasurements += res.insertedCount;
-          // console.log(`Written to DB: ${res.insertedCount}`);
-          resolve();
-        })
-        .catch(err => {
-          if (err.code !== 11000) {
+      const day = new Date(`${dateString}T00:00:00Z`);
+
+      await Promise.all(
+        records.map(async function(record) {
+          try {
+            // TODO insert/update sensor location
+            const date = new Date(record.timestamp).getTime() / 1000;
+
+            const query = { sensor_id: record.sensor_id, day: day };
+            const measurementToAdd = { P10: record.P10, P25: record.P25, timestamp: date };
+
+            try {
+              await dbCollection.updateOne(query, { $set: { day: day } }, { upsert: true });
+            } catch (err) {
+              if (err.code === 11000) {
+                await dbCollection.updateOne(query, { $set: { day: day } }, { upsert: true });
+              } else {
+                throw err;
+              }
+            }
+
+            const sameTimestampMeasurement = await dbCollection.findOne({ ...query, measurements: { $elemMatch: { timestamp: date } } });
+            if (sameTimestampMeasurement !== null) {
+              // measurement is already in db or there are 2 measurements at the exact same timstamp (in which case we ignore the second measurement)
+              return;
+            }
+
+            const result = await dbCollection.updateOne(query, { $push: { measurements: measurementToAdd } });
+            addedMeasurements += result.modifiedCount;
+          } catch (err) {
             console.log(`Got "${err.message}" when trying to write ${url} into database`);
           }
-        });
+        })
+      );
     } catch (err) {
       console.error(`An error occured while processing ${url}:\n${err}\nNotice: this did not stop the processing of the current set of CSV files\n\n`);
     }
@@ -74,7 +96,8 @@ async function getEntireDay(dateString) {
     const fileChunks = chunkArray(csvFiles, 1);
 
     // open db connection
-    const [client, collection] = await connectToCollection();
+    const [client, collection] = await connectToCollection('sensordata');
+    collection.createIndex({ sensor_id: 1, day: 1 }, { unique: true });
     dbClient = client;
 
     const batchedFunctions = fileChunks.map(function(chunk) {

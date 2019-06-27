@@ -1,41 +1,21 @@
 const { MongoClient } = require('mongodb');
 
-// Connection URL
-const url = 'mongodb://localhost:27017';
-// Database Name
-const dbName = 'airdata';
+const cache = {};
 
-function connectToCollection() {
-  return new Promise((resolve, reject) => {
-    const client = new MongoClient(url, { useNewUrlParser: true });
-    client.connect((err, client) => {
-      if (err) {
-        reject(err);
-        return;
-      }
+async function connectToCollection(collection) {
+  if (cache[collection] !== undefined) {
+    return cache[collection];
+  }
 
-      const db = client.db(dbName);
+  const client = new MongoClient('mongodb://localhost:27017', { useNewUrlParser: true });
+  await client.connect();
 
-      db.collection('measurements', (err, collection) => {
-        if (err) {
-          reject(err);
-          return;
-        }
+  const db = client.db('airdata');
+  const col = await db.collection(collection);
 
-        // create an index for the "timestamp" field,
-        // this makes mongodb maintain the ascending order
-        // TODO: maybe move this somewhere else
-        collection.createIndex({ timestamp: 1 }, err => {
-          if (err) {
-            reject(err);
-            return;
-          }
-        });
+  cache[collection] = [client, col];
 
-        resolve([client, collection]);
-      });
-    });
-  });
+  return [client, col];
 }
 
 module.exports = {

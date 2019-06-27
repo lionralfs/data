@@ -10,7 +10,7 @@ cron.schedule('*/2 * * * *', async () => {
   try {
     const latest = await getLatest();
 
-    const [client, collection] = await connectToCollection();
+    const [client, collection] = await connectToCollection('sensordata');
 
     const records = await cleanMeasurements(latest, `latest-${now.getTime()}`);
 

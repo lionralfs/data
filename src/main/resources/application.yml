@@ -10,7 +10,8 @@ spring:
   data:
     mongodb:
       # Mongo server host.
-      host: basecamp-bigdata.informatik.uni-hamburg.de
+      # host: basecamp-bigdata.informatik.uni-hamburg.de
+      host: localhost
       # Mongo server port.
       port: 27017
       # Login user of the mongo server.

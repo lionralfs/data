@@ -1,5 +1,5 @@
 const NEW_DATE_FORMAT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/;
-const OLD_DATE_FORMAT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}\+\d{2}:\d{2}$/;
+const OLD_DATE_FORMAT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{0,6})?(\+\d{2}:\d{2}|Z)$/;
 
 /**
  * Taken from https://stackoverflow.com/a/1353711

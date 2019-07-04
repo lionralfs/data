@@ -64,7 +64,8 @@ public class MeasurementRepositoryCustomImpl implements MeasurementRepositoryCus
     }
 
     // TODO: check previous day
-    System.out.println(((long) timestamp * 1000) - calendar.getTimeInMillis() < threshold * 1000);
+    // System.out.println(((long) timestamp * 1000) - calendar.getTimeInMillis() <
+    // threshold * 1000);
     // TODO: check next day
 
     List<Measurement> result = new ArrayList<Measurement>(0);

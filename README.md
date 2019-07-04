@@ -77,5 +77,5 @@ Result:
 ## Deployment
 
 ```sh
-rsync -avz importer/ username@server:/srv/data/luftdaten19
+rsync -avz importer/ username@server:/srv/data/luftdaten19/importer
 ```

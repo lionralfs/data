@@ -93,7 +93,8 @@ function processSequentially(promises) {
 }
 
 async function getEntireDay(dateString) {
-  let dbClient;
+  let dataClient;
+  let sensorClient;
 
   try {
     const html = await downloadFromArchive(dateString);
@@ -102,11 +103,12 @@ async function getEntireDay(dateString) {
     const fileChunks = chunkArray(csvFiles, 1);
 
     // open db connection
-    const [client, sensorDataCollection] = await connectToCollection('sensordata');
-    const [_, sensorCollection] = await connectToCollection('sensors');
+    const [dataDB, sensorDataCollection] = await connectToCollection('sensordata');
+    const [sensorDB, sensorCollection] = await connectToCollection('sensors');
     sensorDataCollection.createIndex({ sensor_id: 1, day: 1 }, { unique: true });
     sensorCollection.createIndex({ sensor_id: 1 }, { unique: true });
-    dbClient = client;
+    dataClient = dataDB;
+    sensorClient = sensorDB;
 
     const batchedFunctions = fileChunks.map(function(chunk, i) {
       return function() {
@@ -124,7 +126,8 @@ async function getEntireDay(dateString) {
     console.error(err);
   }
 
-  await dbClient.close();
+  await dataClient.close();
+  await sensorClient.close();
 }
 
 /**
@@ -150,6 +153,7 @@ if (startDate === undefined || !dateRegex.test(startDate)) {
 if (singleDay) {
   addedMeasurements = 0;
   const before = new Date();
+  console.log('Running in single-day mode.');
   console.log(`--- Downloading latest measurements from https://archive.luftdaten.info (${startDate}) ---`);
   getEntireDay(startDate)
     .then(() => {

@@ -20,39 +20,67 @@ let addedMeasurements = 0;
 /**
  * @param {string} fileName
  * @param {string} dateString
- * @param {import('mongodb').Collection} dbCollection
+ * @param {import('mongodb').Collection} sensorDataCollection
+ * @param {import('mongodb').Collection} sensorCollection
  */
-function processFile(fileName, dateString, dbCollection) {
+async function processFile(fileName, dateString, sensorDataCollection, sensorCollection) {
   const url = `https://archive.luftdaten.info/${dateString}/${fileName}`;
 
-  return new Promise(async resolve => {
-    try {
-      const rawText = await downloadPlain(url);
-      const measurements = await parseCSV(rawText, {
-        delimiter: ';',
-        columns: true,
-        skip_empty_lines: true
-      });
-      const records = await cleanMeasurements(measurements, url);
+  try {
+    const rawText = await downloadPlain(url);
+    const measurements = await parseCSV(rawText, {
+      delimiter: ';',
+      columns: true,
+      skip_empty_lines: true
+    });
+    const records = await cleanMeasurements(measurements, url);
 
-      dbCollection
-        .insertMany(records, { ordered: false })
-        .then(res => {
-          addedMeasurements += res.insertedCount;
-          // console.log(`Written to DB: ${res.insertedCount}`);
-          resolve();
-        })
-        .catch(err => {
+    const day = new Date(`${dateString}T00:00:00Z`);
+    const sensors = new Map();
+
+    records.forEach(function(record) {
+      if (sensors.get(record.sensor_id) === undefined) {
+        sensors.set(record.sensor_id, { lat: record.lat, lon: record.lon, measurements: new Map() });
+      }
+
+      const date = new Date(record.timestamp).getTime() / 1000;
+
+      sensors.get(record.sensor_id).measurements.set(date, { P10: record.P10, P25: record.P25 });
+    });
+
+    await Promise.all(
+      Array.from(sensors.entries()).map(async function([sensor_id, value]) {
+        try {
+          await sensorCollection.insertOne({ sensor_id: sensor_id, lat: value.lat, lon: value.lon });
+        } catch (err) {
           if (err.code !== 11000) {
-            console.log(`Got "${err.message}" when trying to write ${url} into database`);
+            console.error(err);
           }
-        });
-    } catch (err) {
-      console.error(`An error occured while processing ${url}:\n${err}\nNotice: this did not stop the processing of the current set of CSV files\n\n`);
-    }
+        }
 
-    resolve();
-  });
+        const query = { sensor_id: sensor_id, day: day };
+        const measurementsFromDB = await sensorDataCollection.findOne(query);
+        if (measurementsFromDB !== null) {
+          measurementsFromDB.measurements.forEach(function(measurement) {
+            value.measurements.delete(measurement.timestamp);
+          });
+        }
+
+        const measurements = [];
+        value.measurements.forEach(function(value, key) {
+          measurements.push({ timestamp: key, ...value });
+        });
+
+        const writeResult = await sensorDataCollection.updateOne(query, { $push: { measurements: { $each: measurements } } }, { upsert: true });
+
+        if (writeResult.modifiedCount > 0 || writeResult.upsertedCount > 0) {
+          addedMeasurements += measurements.length;
+        }
+      })
+    );
+  } catch (err) {
+    console.error(`An error occured while processing ${url}:\n${err}\nNotice: this did not stop the processing of the current set of CSV files\n\n`);
+  }
 }
 
 function processSequentially(promises) {
@@ -65,7 +93,8 @@ function processSequentially(promises) {
 }
 
 async function getEntireDay(dateString) {
-  let dbClient;
+  let dataClient;
+  let sensorClient;
 
   try {
     const html = await downloadFromArchive(dateString);
@@ -74,14 +103,19 @@ async function getEntireDay(dateString) {
     const fileChunks = chunkArray(csvFiles, 1);
 
     // open db connection
-    const [client, collection] = await connectToCollection();
-    dbClient = client;
+    const [dataDB, sensorDataCollection] = await connectToCollection('sensordata');
+    const [sensorDB, sensorCollection] = await connectToCollection('sensors');
+    sensorDataCollection.createIndex({ sensor_id: 1, day: 1 }, { unique: true });
+    sensorCollection.createIndex({ sensor_id: 1 }, { unique: true });
+    dataClient = dataDB;
+    sensorClient = sensorDB;
 
-    const batchedFunctions = fileChunks.map(function(chunk) {
+    const batchedFunctions = fileChunks.map(function(chunk, i) {
       return function() {
         const processes = chunk.map(function(fileName) {
-          return processFile(fileName, dateString, collection);
+          return processFile(fileName, dateString, sensorDataCollection, sensorCollection);
         });
+        console.log(`Progress: ${i} / ${fileChunks.length}. Imported ${addedMeasurements} measurements so far. (${dateString})`);
         return Promise.all(processes);
       };
     });
@@ -92,7 +126,8 @@ async function getEntireDay(dateString) {
     console.error(err);
   }
 
-  await dbClient.close();
+  await dataClient.close();
+  await sensorClient.close();
 }
 
 /**
@@ -118,6 +153,7 @@ if (startDate === undefined || !dateRegex.test(startDate)) {
 if (singleDay) {
   addedMeasurements = 0;
   const before = new Date();
+  console.log('Running in single-day mode.');
   console.log(`--- Downloading latest measurements from https://archive.luftdaten.info (${startDate}) ---`);
   getEntireDay(startDate)
     .then(() => {
@@ -127,6 +163,7 @@ if (singleDay) {
     .catch(console.error);
 } else {
   downloadPlain('https://archive.luftdaten.info').then(function(text) {
+    // @ts-ignore
     const $ = cheerio.load(text);
 
     const list = $('td a')

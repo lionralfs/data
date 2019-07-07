@@ -1,8 +1,9 @@
 package airDataBackendService.database;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
-
+import java.util.TimeZone;
 import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +12,9 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
 import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 
+import airDataBackendService.database.DailyMeasurements;
 import airDataBackendService.database.Measurement;
 import airDataBackendService.util.Box;
 
@@ -43,10 +46,37 @@ public class MeasurementRepositoryCustomImpl implements MeasurementRepositoryCus
   }
 
   @Override
-  public List<Sensor> getSensors() {
-    return mongoTemplate.aggregate(
-        Aggregation.newAggregation(Aggregation.group("sensorId").last("lon").as("lon").last("lat").as("lat")),
-        Measurement.class, Sensor.class).getMappedResults();
+  public List<Measurement> getBySensor(String sensor, long timestamp) {
+    int threshold = 10 * 60; // 10min represented in seconds
+    long from = (timestamp) - threshold;
+    long to = (timestamp) + threshold;
+
+    Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+    calendar.setTimeInMillis((long) timestamp * 1000);
+    calendar.set(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH), 0, 0,
+        0);
+
+    Query query = new Query(Criteria.where("sensor_id").is(sensor).and("day").is(calendar.getTime()));
+    DailyMeasurements exactDay = mongoTemplate.findOne(query, DailyMeasurements.class);
+
+    if (exactDay == null) {
+      return new ArrayList<Measurement>(0);
+    }
+
+    // TODO: check previous day
+    // System.out.println(((long) timestamp * 1000) - calendar.getTimeInMillis() <
+    // threshold * 1000);
+    // TODO: check next day
+
+    List<Measurement> result = new ArrayList<Measurement>(0);
+
+    for (Measurement m : exactDay.measurements) {
+      if (m.timestamp >= from && m.timestamp <= to) {
+        result.add(m);
+      }
+    }
+
+    return result;
   }
 
   // @Override

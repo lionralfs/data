@@ -10,6 +10,5 @@ import airDataBackendService.database.Measurement;
 
 public interface MeasurementRepository extends MongoRepository<Measurement, String>, MeasurementRepositoryCustom {
 
-  @Query("{'sensor_id': {$eq: ?0}, 'timestamp': {$gte: ?1, $lte: ?2}}")
-  public List<Measurement> getBySensor(String sensor, Date from, Date to);
+  // @Query("{'sensor_id': {$eq: ?0}, 'timestamp': {$gte: ?1, $lte: ?2}}")
 }

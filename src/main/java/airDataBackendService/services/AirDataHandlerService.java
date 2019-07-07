@@ -2,6 +2,7 @@ package airDataBackendService.services;
 
 import airDataBackendService.database.Measurement;
 import airDataBackendService.database.Sensor;
+import airDataBackendService.database.SensorRepository;
 import airDataBackendService.database.MeasurementRepository;
 import airDataBackendService.util.Box;
 // import org.slf4j.Logger;
@@ -21,6 +22,9 @@ import java.util.List;
 public class AirDataHandlerService {
     // private static final Logger LOGGER =
     // LoggerFactory.getLogger(AirDataHandlerService.class);
+
+    @Autowired
+    private SensorRepository sensorRepository;
 
     @Autowired
     private MeasurementRepository measurementRepository;
@@ -64,14 +68,11 @@ public class AirDataHandlerService {
     }
 
     public List<Sensor> getSensors() {
-        return measurementRepository.getSensors();
+        return sensorRepository.findAll();
     }
 
     public List<Measurement> getBySensor(String sensor, long timestamp) {
-        Date from = new Date((timestamp * 1000) - 10 * 60 * 1000);
-        Date to = new Date((timestamp * 1000) + 10 * 60 * 1000);
-
-        return measurementRepository.getBySensor(sensor, from, to);
+        return measurementRepository.getBySensor(sensor, timestamp);
     }
 
 }

@@ -8,7 +8,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Document(collection = "sensordata")
-public class DailyMeasurements {
+public class DailyMeasurement {
 
   @Field("sensor_id")
   public String sensor_id;
@@ -17,5 +17,6 @@ public class DailyMeasurements {
   @Field("day")
   public Date day;
 
+  @Field("measurements")
   public List<Measurement> measurements;
 }

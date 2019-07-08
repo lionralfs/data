@@ -1,5 +1,6 @@
 package airDataBackendService.services;
 
+import airDataBackendService.database.DailyMeasurement;
 import airDataBackendService.database.Measurement;
 import airDataBackendService.database.Sensor;
 import airDataBackendService.database.SensorRepository;
@@ -14,9 +15,13 @@ import org.springframework.stereotype.Component;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TimeZone;
 
 @Component
 public class AirDataHandlerService {
@@ -73,6 +78,40 @@ public class AirDataHandlerService {
 
     public List<Measurement> getBySensor(String sensor, long timestamp) {
         return measurementRepository.getBySensor(sensor, timestamp);
+    }
+
+    public Map<String, String[]> getAverages(long timestamp) {
+        List<DailyMeasurement> measurements = measurementRepository.getMeasurementsByDay(timestamp);
+
+        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+        calendar.setTimeInMillis((long) timestamp * 1000);
+        calendar.set(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH), 0,
+                0, 0);
+        long startOfDay = calendar.getTimeInMillis() / 1000;
+
+        if (measurements == null) {
+            return new HashMap<String, String[]>(0);
+        }
+
+        Map<String, String[]> result = new HashMap<String, String[]>();
+        for (DailyMeasurement dm : measurements) {
+            String[] list = new String[24];
+            Arrays.fill(list, "");
+
+            for (Measurement m : dm.measurements) {
+                int hour = (int) Math.floor((m.timestamp - startOfDay) / (60 * 60));
+
+                if (hour < 0 || hour > 23) {
+                    continue;
+                }
+
+                list[hour] = list[hour] + ";" + m.p25;
+            }
+
+            result.put(dm.sensor_id, list);
+        }
+
+        return result;
     }
 
 }

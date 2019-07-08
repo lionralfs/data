@@ -14,7 +14,7 @@ import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 
-import airDataBackendService.database.DailyMeasurements;
+import airDataBackendService.database.DailyMeasurement;
 import airDataBackendService.database.Measurement;
 import airDataBackendService.util.Box;
 
@@ -51,17 +51,7 @@ public class MeasurementRepositoryCustomImpl implements MeasurementRepositoryCus
     long from = (timestamp) - threshold;
     long to = (timestamp) + threshold;
 
-    Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-    calendar.setTimeInMillis((long) timestamp * 1000);
-    calendar.set(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH), 0, 0,
-        0);
-
-    Query query = new Query(Criteria.where("sensor_id").is(sensor).and("day").is(calendar.getTime()));
-    DailyMeasurements exactDay = mongoTemplate.findOne(query, DailyMeasurements.class);
-
-    if (exactDay == null) {
-      return new ArrayList<Measurement>(0);
-    }
+    List<Measurement> dailyMeasurements = this.getBySensorFullDay(sensor, timestamp);
 
     // TODO: check previous day
     // System.out.println(((long) timestamp * 1000) - calendar.getTimeInMillis() <
@@ -70,7 +60,7 @@ public class MeasurementRepositoryCustomImpl implements MeasurementRepositoryCus
 
     List<Measurement> result = new ArrayList<Measurement>(0);
 
-    for (Measurement m : exactDay.measurements) {
+    for (Measurement m : dailyMeasurements) {
       if (m.timestamp >= from && m.timestamp <= to) {
         result.add(m);
       }
@@ -79,20 +69,40 @@ public class MeasurementRepositoryCustomImpl implements MeasurementRepositoryCus
     return result;
   }
 
-  // @Override
-  // public List<Measurement> getBySensor(String sensor, int timestamp) {
-  // long startTime = System.nanoTime();
+  private Date timestampToDay(long timestamp) {
+    Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+    calendar.setTimeInMillis((long) timestamp * 1000);
+    calendar.set(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH), 0, 0,
+        0);
 
-  // List<Measurement> result = mongoTemplate.find(
-  // Query.query(Criteria.where("sensorId").is(sensor).and("timestamp").gte(timestamp
-  // - 10 * 60 * 1000)),
-  // Measurement.class);
+    return calendar.getTime();
+  }
 
-  // long endTime = System.nanoTime();
-  // long duration = (endTime - startTime) / 1000000;
+  @Override
+  public List<Measurement> getBySensorFullDay(String sensor, long timestamp) {
+    List<Measurement> result = new ArrayList<Measurement>();
 
-  // System.out.println("/bySensor took " + duration + " ms!");
+    Query query = new Query(Criteria.where("sensor_id").is(sensor).and("day").is(this.timestampToDay(timestamp)));
+    DailyMeasurement exactDay = mongoTemplate.findOne(query, DailyMeasurement.class);
 
-  // return result;
-  // }
+    if (exactDay == null) {
+      return new ArrayList<Measurement>(0);
+    }
+
+    return result;
+  }
+
+  @Override
+  public List<DailyMeasurement> getMeasurementsByDay(long timestamp) {
+    Date day = this.timestampToDay(timestamp);
+    Query query = new Query(Criteria.where("day").is(day));
+
+    List<DailyMeasurement> result = mongoTemplate.find(query, DailyMeasurement.class, "sensordata");
+
+    if (result == null) {
+      return new ArrayList<DailyMeasurement>(0);
+    }
+
+    return result;
+  }
 }

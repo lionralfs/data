@@ -31,3 +31,7 @@ spring:
       repositories:
         # Enable Mongo repositories.
         enabled: true
+
+logging:
+  level:
+    org.springframework.data.mongodb.core.MongoTemplate: DEBUG

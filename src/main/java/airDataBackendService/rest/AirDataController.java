@@ -53,4 +53,9 @@ public class AirDataController {
             @RequestParam(value = "timestamp", required = true) long timestamp) {
         return airDataHandlerService.getBySensor(sensor, timestamp);
     }
+
+    @GetMapping(value = "averages", produces = "application/json")
+    public Map<String, String[]> getAverages(@RequestParam(value = "timestamp", required = true) long timestamp) {
+        return airDataHandlerService.getAverages(timestamp);
+    }
 }

@@ -45,28 +45,57 @@ public class MeasurementRepositoryCustomImpl implements MeasurementRepositoryCus
     return mongoTemplate.aggregate(agg, Measurement.class, Measurement.class).getMappedResults();
   }
 
+  private Date subtractDays(long timestampInMillis, int daysToSubtract) {
+    long daysToSubtractInMillis = daysToSubtract * 24 * 60 * 60 * 1000;
+    Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+    calendar.setTimeInMillis(timestampInMillis - daysToSubtractInMillis);
+    calendar.set(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH), 0, 0,
+        0);
+
+    return calendar.getTime();
+  }
+
   @Override
-  public List<Measurement> getBySensor(String sensor, long timestamp) {
-    int threshold = 10 * 60; // 10min represented in seconds
-    long from = (timestamp) - threshold;
-    long to = (timestamp) + threshold;
+  public List<Measurement> getBySensor(String sensor, long timestampInSeconds) {
+    long threshold = 3 * 60 * 60; // 3 hours represented in seconds
+    long from = timestampInSeconds - 7 * 24 * 60 * 60 - threshold;
+    long to = timestampInSeconds + threshold;
 
-    List<Measurement> dailyMeasurements = this.getBySensorFullDay(sensor, timestamp);
+    Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+    calendar.setTimeInMillis((long) timestampInSeconds * 1000);
+    calendar.set(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH), 0, 0,
+        0);
+    long startTimeInMillis = calendar.getTimeInMillis();
 
-    // TODO: check previous day
-    // System.out.println(((long) timestamp * 1000) - calendar.getTimeInMillis() <
-    // threshold * 1000);
-    // TODO: check next day
+    Query query = new Query(Criteria.where("sensor_id").is(sensor).orOperator(
+        Criteria.where("day").is(this.subtractDays(startTimeInMillis, -1)),
+        Criteria.where("day").is(this.subtractDays(startTimeInMillis, 0)),
+        Criteria.where("day").is(this.subtractDays(startTimeInMillis, 1)),
+        Criteria.where("day").is(this.subtractDays(startTimeInMillis, 2)),
+        Criteria.where("day").is(this.subtractDays(startTimeInMillis, 3)),
+        Criteria.where("day").is(this.subtractDays(startTimeInMillis, 4)),
+        Criteria.where("day").is(this.subtractDays(startTimeInMillis, 5)),
+        Criteria.where("day").is(this.subtractDays(startTimeInMillis, 6)),
+        Criteria.where("day").is(this.subtractDays(startTimeInMillis, 7)),
+        Criteria.where("day").is(this.subtractDays(startTimeInMillis, 8))));
 
-    List<Measurement> result = new ArrayList<Measurement>(0);
+    List<DailyMeasurement> days = mongoTemplate.find(query, DailyMeasurement.class);
 
-    for (Measurement m : dailyMeasurements) {
-      if (m.timestamp >= from && m.timestamp <= to) {
-        result.add(m);
+    if (days == null) {
+      return new ArrayList<Measurement>(0);
+    }
+
+    List<Measurement> allMeasurements = new ArrayList<Measurement>(0);
+
+    for (DailyMeasurement dm : days) {
+      for (Measurement m : dm.measurements) {
+        if (m.timestamp >= from && m.timestamp <= to) {
+          allMeasurements.add(m);
+        }
       }
     }
 
-    return result;
+    return allMeasurements;
   }
 
   private Date timestampToDay(long timestamp) {

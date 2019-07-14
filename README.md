@@ -76,6 +76,8 @@ Result:
 
 ## Deployment
 
-```sh
-rsync -avz importer/ username@server:/srv/data/luftdaten19/importer
-```
+1. ```sh
+   rsync -avz importer/ username@server:/srv/data/luftdaten19/importer
+   rsync -avz package.json username@server:/srv/data/luftdaten19/
+   ```
+2. Login on the server via `ssh`, change into the `/srv/data/luftdaten19` directory and run `npm install`

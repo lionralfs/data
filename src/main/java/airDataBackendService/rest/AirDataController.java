@@ -49,8 +49,9 @@ public class AirDataController {
     }
 
     @GetMapping(value = "bySensor", produces = "application/json")
-    public List<Measurement> getMeasurementsBySensor(@RequestParam(value = "sensor", required = true) String sensor,
+    public BySensorResponse getMeasurementsBySensor(@RequestParam(value = "sensor", required = true) String sensor,
             @RequestParam(value = "timestamp", required = true) long timestamp) {
+
         return airDataHandlerService.getBySensor(sensor, timestamp);
     }
 
@@ -58,4 +59,6 @@ public class AirDataController {
     public Map<String, String[]> getAverages(@RequestParam(value = "timestamp", required = true) long timestamp) {
         return airDataHandlerService.getAverages(timestamp);
     }
+
+    //TODO REST API for KML files
 }

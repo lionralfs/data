@@ -16,7 +16,6 @@ import org.springframework.stereotype.Component;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -125,8 +124,13 @@ public class AirDataHandlerService {
         return response;
     }
 
-    public Map<String, String[]> getAverages(long timestamp) {
+    public Map<String, double[]> getAverages(long timestamp) {
         List<DailyMeasurement> measurements = measurementRepository.getMeasurementsByDay(timestamp);
+
+        class Counter {
+            int p25count;
+            double p25sum;
+        }
 
         Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
         calendar.setTimeInMillis((long) timestamp * 1000);
@@ -135,13 +139,12 @@ public class AirDataHandlerService {
         long startOfDay = calendar.getTimeInMillis() / 1000;
 
         if (measurements == null) {
-            return new HashMap<String, String[]>(0);
+            return new HashMap<String, double[]>(0);
         }
 
-        Map<String, String[]> result = new HashMap<String, String[]>();
+        Map<String, Counter[]> map = new HashMap<String, Counter[]>();
         for (DailyMeasurement dm : measurements) {
-            String[] list = new String[24];
-            Arrays.fill(list, "");
+            Counter[] list = new Counter[24];
 
             for (Measurement m : dm.measurements) {
                 int hour = (int) Math.floor((m.timestamp - startOfDay) / (60 * 60));
@@ -150,10 +153,39 @@ public class AirDataHandlerService {
                     continue;
                 }
 
-                list[hour] = list[hour] + ";" + m.p25;
+                Counter c = list[hour];
+                if (c == null) {
+                    c = new Counter();
+                    list[hour] = c;
+                }
+
+                c.p25count++;
+                c.p25sum += m.p25;
             }
 
-            result.put(dm.sensor_id, list);
+            map.put(dm.sensor_id, list);
+        }
+
+        Map<String, double[]> result = new HashMap<String, double[]>();
+
+        // actually calculate the average
+        for(Map.Entry<String, Counter[]> entry : map.entrySet()) {
+            String key = entry.getKey();
+            Counter[] counterList = entry.getValue();
+
+            double[] list = new double[24];
+
+            for (int i = 0; i < 24; i++) {
+                Counter c = counterList[i];
+                if (c == null) {
+                    list[i] = -1.0;
+                    continue;
+                }
+                double p25average = c.p25sum / c.p25count;
+                list[i] = p25average;
+            }
+
+            result.put(key, list);
         }
 
         return result;

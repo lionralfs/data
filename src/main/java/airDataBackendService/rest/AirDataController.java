@@ -56,7 +56,7 @@ public class AirDataController {
     }
 
     @GetMapping(value = "averages", produces = "application/json")
-    public Map<String, String[]> getAverages(@RequestParam(value = "timestamp", required = true) long timestamp) {
+    public Map<String, double[]> getAverages(@RequestParam(value = "timestamp", required = true) long timestamp) {
         return airDataHandlerService.getAverages(timestamp);
     }
 

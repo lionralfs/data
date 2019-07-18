@@ -16,6 +16,10 @@ public class DayHourlySensorData
 	public final double[] p1 = new double[24];
 	@Field("P2")
 	public final double[] p2 = new double[24];
+	@Field("P1Vorhersage")
+	public final double[] p1V = new double[24];
+	@Field("P2Vorhersage")
+	public final double[] p2V = new double[24];
 	@Field("Windgeschw")
 	public final double[] windspeed = new double[24];
 	@Field("MaxWindgeschw")

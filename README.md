@@ -41,6 +41,8 @@ To inspect the MongoDB database using a GUI, I recommend [Robo 3T](https://robom
 
 ## Deployment
 
+TODO: add description on how to update app on the server
+
 1. ```sh
    rsync -avz importer/ username@server:/srv/data/luftdaten19/importer
    rsync -avz package.json username@server:/srv/data/luftdaten19/

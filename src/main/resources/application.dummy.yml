@@ -1,6 +1,6 @@
 secrets:
   webhookEndpoint: ''
-  apiKey: ''
+  apiKey: 'change-me'
 
 spring:
   data:

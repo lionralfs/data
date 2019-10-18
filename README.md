@@ -23,6 +23,8 @@ However, this only boots up the API, without a frontend. To include the frontend
 6. Run `mvn clean package && java -jar target/AirDataBackendService.war` again to start the application.
 7. Open [http://localhost:8080](http://localhost:8080).
 
+Steps 4 and 5 can be done easily by using `cp -a dist/. ../data/src/main/resources/static`, assuming you are currently in the frontend-repository and your backend-repository is under `data`.
+
 ## Manual data import
 
 While the application imports new data on its own (in a 4 minute interval) it might be useful to trigger a manual import. This is currently the only way to import historical (dust) data.

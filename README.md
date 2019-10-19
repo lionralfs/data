@@ -43,7 +43,14 @@ To inspect the MongoDB database using a GUI, I recommend [Robo 3T](https://robom
 
 ## Deployment
 
-TODO: add description on how to update app on the server
+### Updating the app
+
+To upload a new version of the app on the server, you must first create a .war file.
+To do that, edit `src/main/resources/application.yml` so that `spring.data.mongodb.host` is set to `basecamp-bigdata.informatik.uni-hamburg.de`.
+
+Now, you can run `mvn clean package -Dmaven.test.skip=true`. This generates a AirDataBackendService.war file in `target`. You can now log into the Tomcat Web Application Manager and deploy by using "WAR file to deploy".
+
+### Updating the Node.js importer
 
 1. ```sh
    rsync -avz importer/ username@server:/srv/data/luftdaten19/importer
